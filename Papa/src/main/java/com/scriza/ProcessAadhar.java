@@ -18,28 +18,21 @@ import net.sourceforge.tess4j.TesseractException;
 
 public class ProcessAadhar {
 public void getCaptcha(String aadhar){
-
   System.setProperty("webdriver.chrome.driver", "C:\\selenium WebDriver\\chromedriver-win64\\chromedriver.exe");
   WebDriver driver = new ChromeDriver();
-  // Initialize ChromeDriver
   driver.manage().window().maximize();
-
   try {
       driver.manage().window().maximize();
       driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
       driver.get("https://myaadhaar.uidai.gov.in/genricDownloadAadhaar");
-
       WebElement aadhaarInput = driver.findElement(By.name("uid"));
       aadhaarInput.sendKeys(aadhar);
-
      performTesseractOCR(driver);
      System.out.println("Sending OTP");
 //     driver.manage().window().setPosition(new Point(-2000, 0)); // Move the window off-screen
 //      WebElement generateOTPButton = driver.findElement(By.className("button_btn__HeAxz"));
 //     res.sendRedirect("./otpinput.html");
-
   } catch (Exception e) {
-      // TODO: handle exception
       System.out.println("Exception caught :" + e.getMessage());
   }
 }
@@ -48,42 +41,31 @@ private static void performTesseractOCR(WebDriver driver) {
   try {
       WebElement imageelement = driver.findElement(By.className("auth-form__captcha-image"));
       File src = imageelement.getScreenshotAs(OutputType.FILE);
-      String path = "C:\\Users\\H3RI3R\\eclipse-workspace\\Papa\\captchaImages\\captchaImage.png";
+      String path = "C:\\Users\\H3RI3R\\git\\AadharAutomation\\Papa\\captchaImages\\captchaImage.png";
       FileHandler.copy(src, new File(path));
       Thread.sleep(3000);
       ITesseract image = new Tesseract();
       String str = image.doOCR(new File(path));
       System.out.println("Image OCR done");
-
       System.out.println(str);
        str = str.replaceAll("[^a-zA-Z0-9]", "");
-
       System.out.println(str);
-
       // Check if the captcha text is less than 6 characters
       if (str.length() < 6) {
           // Click on notFoundOTP button
           WebElement resetCaptcha = driver.findElement(By.xpath("//div[@class='auth-form__captcha']"));
           resetCaptcha.click();
-
-          // Clear captcha input field
-          WebElement captchaInput = driver.findElement(By.name("captcha"));
+          WebElement captchaInput = driver.findElement(By.name("captcha"));// Clear captcha input field
           captchaInput.clear();
-
-          // Perform Tesseract OCR again
-          performTesseractOCR(driver);
+          performTesseractOCR(driver);// Perform Tesseract OCR again
       } 
           // Fill captcha input field if captcha text is valid
       else if(str.length()>6){
       	 WebElement resetCaptcha = driver.findElement(By.xpath("//div[@class='auth-form__captcha']"));
            resetCaptcha.click();
-
-           // Clear captcha input field
-           WebElement captchaInput = driver.findElement(By.name("captcha"));
+           WebElement captchaInput = driver.findElement(By.name("captcha"));// Clear captcha input field
            captchaInput.clear();
-
-           // Perform Tesseract OCR again
-           performTesseractOCR(driver);
+           performTesseractOCR(driver); // Perform Tesseract OCR again
       
       }
       else if(str.length()==6){ 
@@ -94,7 +76,6 @@ private static void performTesseractOCR(WebDriver driver) {
           // Click on Send OTP button
           WebElement sendOTPButton = driver.findElement(By.xpath("//button[@class = 'button_btn__HeAxz']")); // Assuming this is the Send OTP button
           sendOTPButton.click();
-
           Thread.sleep(2000);
           WebElement alertElement = driver.findElement(By.xpath("//div[@role='alert' and contains(@class, 'Toastify__toast-body')]"));
           if (alertElement.getText().equals("Invalid Captcha")) {

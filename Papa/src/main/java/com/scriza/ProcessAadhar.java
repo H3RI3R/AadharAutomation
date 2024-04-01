@@ -29,7 +29,7 @@ public void getCaptcha(String aadhar){
       aadhaarInput.sendKeys(aadhar);
      performTesseractOCR(driver);
      System.out.println("Sending OTP");
-//     driver.manage().window().setPosition(new Point(-2000, 0)); // Move the window off-screen
+     driver.manage().window().setPosition(new Point(-2000, 0)); // Move the window off-screen
 //      WebElement generateOTPButton = driver.findElement(By.className("button_btn__HeAxz"));
 //     res.sendRedirect("./otpinput.html");
   } catch (Exception e) {

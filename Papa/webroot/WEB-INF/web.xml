@@ -16,7 +16,7 @@
     </servlet>
     <servlet-mapping>
         <servlet-name>abe</servlet-name>
-        <url-pattern>/otp</url-pattern>
+        <url-pattern>/OTPInputServlet</url-pattern>
     </servlet-mapping>
     
     

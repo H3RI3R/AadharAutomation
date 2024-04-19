@@ -19,5 +19,4 @@
         <url-pattern>/OTPInputServlet</url-pattern>
     </servlet-mapping>
     
-    
 </web-app>

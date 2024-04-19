@@ -1,12 +1,20 @@
 package com.scriza;
 
 import java.io.IOException;
+//import org.jsoup:jsoup:1.17.2;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -20,21 +28,7 @@ public class OTPInputServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get the OTP from the request parameter
         String otp = request.getParameter("otp");
-        
-		/*
-		 * // Get Aadhar number where OTP is null String aadharNumber =
-		 * getAadharWithNullOTP();
-		 * 
-		 * // Store Aadhar number and OTP in the database
-		 * storeAadharAndOTPInDatabase(aadharNumber, otp);
-		 */
-        
-		/*
-		 * try { String otps = retrieveOTPFromDatabase(aadharNumber);
-		 * System.out.println("OTP retrived from Databse "+otps); } catch (SQLException
-		 * | InterruptedException e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
-		 */
+ 
         
         WebDriver driver = CustomDriver.webDriver;
 //        Set<String> windowsOpened = driver.getWindowHandles();
@@ -45,26 +39,76 @@ public class OTPInputServlet extends HttpServlet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+        
         driver.findElement(By.className("button_btn__A84dV")).click();
-      
-        if(!driver.findElements(By.className("aadhaar-front")).isEmpty())
-        	 response.sendRedirect("success.html"); // Redirect to a success page
-			/*
-			 * String actualInvalidOTPError =
-			 * driver.findElement(By.className("login-section__error")).getText(); String
-			 * expectedInvalidOTPErrror = "Unable to Validate OTP! Please try again later";
-			 */
-		/*
-		 * ProcessAadhar processAadhar = new ProcessAadhar(driver,aadharNumber,otp);
-		 * processAadhar.processOTP(aadharNumber);
-		 */
-//        enterOTPAndVerify(otp);
-        // Redirect the user to another page or send a response
-//        if(expectedInvalidOTPErrror.equalsIgnoreCase(actualInvalidOTPError))
-        else 
-        	response.sendRedirect("index.html");
+//        Alert alert = driver.switchTo().alert();	
+//        String alert = driver.switchTo().alert().getText();
+//        if(alert.contains("Do you want to clear the session and proceed? "))
+//        	
+        if(!driver.findElements(By.className("aadhaar-front")).isEmpty()) {
+            // If Aadhaar front element is present, indicating successful login
+
+            // Extract data from the website
+            String jsonData = scrapeDataFromWebsite(driver);
+
+            // Set response type to JSON
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+
+            // Send JSON response
+            response.getWriter().write(jsonData);
+        } else {
+            // Redirect to index.html if login fails
+            response.sendRedirect("index.html");
+        }
     }
-    
+
+    private String scrapeDataFromWebsite(WebDriver driver) {
+        // Load the webpage using JSoup
+        Document doc = Jsoup.parse(driver.getPageSource());
+        
+        // Extract required elements using CSS selectors
+        Element nameElement = doc.selectFirst(".name-local");
+        String name = nameElement != null ? nameElement.text() : "";
+
+        Element ageElement = doc.selectFirst(".name-english");
+        String age = ageElement != null ? ageElement.text() : "";
+
+        Element dobElement = doc.selectFirst(".dob");
+        String dob = dobElement != null ? dobElement.text() : "";
+
+        Element genderElement = doc.selectFirst(".gender");
+        String gender = genderElement != null ? genderElement.text() : "";
+
+        Element aadharNumElement = doc.selectFirst(".aadhaar-front__aadhaar-number");
+        String aadharNum = aadharNumElement != null ? aadharNumElement.text() : "";
+
+        Element aadharAddressElement = doc.selectFirst(".aadhaar-back__address-english");
+        String aadharAddress = aadharAddressElement != null ? aadharAddressElement.text() : "";
+
+        // Construct JSON object manually
+        StringBuilder jsonData = new StringBuilder();
+        jsonData.append("{");
+        jsonData.append("\"name\": \"" + name + "\",");
+        jsonData.append("\"age\": \"" + age + "\",");
+        jsonData.append("\"dob\": \"" + dob + "\",");
+        jsonData.append("\"gender\": \"" + gender + "\",");
+        jsonData.append("\"aadharNumber\": \"" + aadharNum + "\",");
+        jsonData.append("\"aadharAddress\": \"" + aadharAddress + "\"");
+        jsonData.append("}");
+
+        return jsonData.toString();
+    }
+
+    private String convertToJson(List<String> data) {
+        // Convert the list of strings to JSON format
+        JSONObject jsonObject = new JSONObject();
+        for (int i = 0; i < data.size(); i++) {
+            jsonObject.put("data" + i, data.get(i));
+        }
+        return jsonObject.toString();
+    }
+
     private String getAadharWithNullOTP() {
         String aadharNumber = null;
         try {
@@ -169,3 +213,31 @@ public class OTPInputServlet extends HttpServlet {
     }
 
 }
+
+	/*
+	 * // Get Aadhar number where OTP is null String aadharNumber =
+	 * getAadharWithNullOTP();
+	 * 
+	 * // Store Aadhar number and OTP in the database
+	 * storeAadharAndOTPInDatabase(aadharNumber, otp);
+	 */
+ 
+	/*
+	 * try { String otps = retrieveOTPFromDatabase(aadharNumber);
+	 * System.out.println("OTP retrived from Databse "+otps); } catch (SQLException
+	 * | InterruptedException e) { // TODO Auto-generated catch block
+	 * e.printStackTrace(); }
+	 */
+
+/*
+ * String actualInvalidOTPError =
+ * driver.findElement(By.className("login-section__error")).getText(); String
+ * expectedInvalidOTPErrror = "Unable to Validate OTP! Please try again later";
+ */
+/*
+* ProcessAadhar processAadhar = new ProcessAadhar(driver,aadharNumber,otp);
+* processAadhar.processOTP(aadharNumber);
+*/
+//enterOTPAndVerify(otp);
+// Redirect the user to another page or send a response
+//if(expectedInvalidOTPErrror.equalsIgnoreCase(actualInvalidOTPError))

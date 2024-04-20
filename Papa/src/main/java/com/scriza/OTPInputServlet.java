@@ -6,10 +6,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,6 +20,9 @@ import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -36,7 +41,7 @@ public class OTPInputServlet extends HttpServlet {
         try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+
 			e.printStackTrace();
 		}
         
@@ -44,64 +49,124 @@ public class OTPInputServlet extends HttpServlet {
 //        Alert alert = driver.switchTo().alert();	
 //        String alert = driver.switchTo().alert().getText();
 //        if(alert.contains("Do you want to clear the session and proceed? "))
-//        	
         if(!driver.findElements(By.className("aadhaar-front")).isEmpty()) {
             // If Aadhaar front element is present, indicating successful login
 
             // Extract data from the website
-            String jsonData = scrapeDataFromWebsite(driver);
+        	WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        	WebElement profileElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@id='profile']")));
+        	 profileElement.click();
+        	 WebElement nameElement =  wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='name-local']")));
+        	 JSONObject jsonData = scrapeDataFromWebsite(driver);
+
+             // Further processing of the scraped data (if needed)
+        	 if (jsonData != null) {
+                 try {
+                     // Set response type to JSON
+                     response.setContentType("application/json");
+                     response.setCharacterEncoding("UTF-8");
+
+                     // Send JSON response
+                     response.getWriter().write(jsonData.toString());
+                 } catch (JSONException e) {
+                     // Handle JSONException
+                     e.printStackTrace();
+                 }
+             } else {
+                 // Handle case where scraping failed
+                 response.sendRedirect("index.html");
+             }
 
             // Set response type to JSON
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
+//            response.setContentType("application/json");
+//            response.setCharacterEncoding("UTF-8");
 
             // Send JSON response
-            response.getWriter().write(jsonData);
+//            response.getWriter().write(jsonData.toString());
         } else {
             // Redirect to index.html if login fails
             response.sendRedirect("index.html");
         }
     }
 
-    private String scrapeDataFromWebsite(WebDriver driver) {
-        // Load the webpage using JSoup
-        Document doc = Jsoup.parse(driver.getPageSource());
-        
-        // Extract required elements using CSS selectors
-        Element nameElement = doc.selectFirst(".name-local");
-        String name = nameElement != null ? nameElement.text() : "";
+    private JSONObject scrapeDataFromWebsite(WebDriver driver) {
+    	 JSONObject jsonData = new JSONObject();
 
-        Element ageElement = doc.selectFirst(".name-english");
-        String age = ageElement != null ? ageElement.text() : "";
+    	    try {
+    	        // Get the HTML content of the page
+    	        String htmlContent = driver.getPageSource();
+    	        Document doc = Jsoup.parse(htmlContent);
 
-        Element dobElement = doc.selectFirst(".dob");
-        String dob = dobElement != null ? dobElement.text() : "";
+    	        // Extract desired elements using JSoup selectors
+    	        Element nameElement = doc.selectFirst("div.name-local");
+    	        String name = nameElement.text();
+    	        jsonData.put("Name", name);
 
-        Element genderElement = doc.selectFirst(".gender");
-        String gender = genderElement != null ? genderElement.text() : "";
+    	        Element aadharContentElement = doc.selectFirst("div.aadhaar-front__aadhaar-content");
+    	        String aadharContent = aadharContentElement.text();
+    	        jsonData.put("AadharContent", aadharContent);
 
-        Element aadharNumElement = doc.selectFirst(".aadhaar-front__aadhaar-number");
-        String aadharNum = aadharNumElement != null ? aadharNumElement.text() : "";
+    	        Element ageElement = doc.selectFirst("div.name-english");
+    	        String age = ageElement.text();
+    	        jsonData.put("Age", age);
 
-        Element aadharAddressElement = doc.selectFirst(".aadhaar-back__address-english");
-        String aadharAddress = aadharAddressElement != null ? aadharAddressElement.text() : "";
+    	        Element dobElement = doc.selectFirst(".dob");
+    	        String dob = dobElement.text();
+    	        jsonData.put("DateOfBirth", dob);
 
-        // Construct JSON object manually
-        StringBuilder jsonData = new StringBuilder();
-        jsonData.append("{");
-        jsonData.append("\"name\": \"" + name + "\",");
-        jsonData.append("\"age\": \"" + age + "\",");
-        jsonData.append("\"dob\": \"" + dob + "\",");
-        jsonData.append("\"gender\": \"" + gender + "\",");
-        jsonData.append("\"aadharNumber\": \"" + aadharNum + "\",");
-        jsonData.append("\"aadharAddress\": \"" + aadharAddress + "\"");
-        jsonData.append("}");
+    	        Element genderElement = doc.selectFirst(".gender");
+    	        String gender = genderElement.text();
+    	        jsonData.put("Gender", gender);
 
-        return jsonData.toString();
+    	        Element aadharNumElement = doc.selectFirst(".aadhaar-front__aadhaar-number");
+    	        String aadharNum = aadharNumElement.text();
+    	        jsonData.put("AadharNumber", aadharNum);
+
+    	        Element aadharAddressElement = doc.selectFirst(".aadhaar-back__address-english");
+    	        String aadharAddress = aadharAddressElement.text();
+    	        jsonData.put("AadharAddress", aadharAddress);
+
+    	        // Convert JSONObject to string
+//    	        String jsonResult = jsonData.toString();
+
+    	        // Print JSON data
+//    	        System.out.println(jsonResult);
+
+    	        return jsonData;
+    	    } catch (Exception e) {
+    	        System.out.println("Error scraping data from website: " + e.getMessage());
+    	        return null;
+    	    }
+//    	WebElement nameElement = driver.findElement(By.xpath("//div[@class='name-local']"));
+//        String name = nameElement.getText();
+//        WebElement aadharContentElement= driver.findElement(By.xpath("//div[@class='aadhaar-front__aadhaar-content']"));
+//        String AddharContent = aadharContentElement.getText();
+//        WebElement ageElement = driver.findElement(By.xpath("//div[@class= 'name-english']"));
+//        String age = ageElement.getText();
+//
+//        WebElement dobElement = driver.findElement(By.className("dob"));
+//        String dob = dobElement.getText();
+//
+//        WebElement genderElement = driver.findElement(By.className("gender"));
+//        String gender = genderElement.getText();
+//
+//        WebElement aadharNumElement = driver.findElement(By.className("aadhaar-front__aadhaar-number"));
+//        String aadharNum = aadharNumElement.getText();
+//
+//        WebElement aadharAddressElement = driver.findElement(By.className("aadhaar-back__address-english"));
+//        String aadharAddress = aadharAddressElement.getText();
+//
+//        // Print scraped data to console
+//        System.out.println("Name: " + name);
+//        System.out.println("Age: " + age);
+//        System.out.println("Date of Birth: " + dob);
+//        System.out.println("Gender: " + gender);
+//        System.out.println("Aadhar Number: " + aadharNum);
+//        System.out.println("Aadhar Address: " + aadharAddress);
+//        System.out.println("ALl contents in aadhar  "+ AddharContent);
     }
 
     private String convertToJson(List<String> data) {
-        // Convert the list of strings to JSON format
         JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < data.size(); i++) {
             jsonObject.put("data" + i, data.get(i));
@@ -112,26 +177,16 @@ public class OTPInputServlet extends HttpServlet {
     private String getAadharWithNullOTP() {
         String aadharNumber = null;
         try {
-            // Establish a connection to the database
             Connection con = DBConnectionManager.getConnection();
-            
-            // Prepare SQL statement to select Aadhar number where OTP is null
             String sql = "SELECT aadhar_number FROM aadhar_data WHERE otp IS NULL";
             PreparedStatement ps = con.prepareStatement(sql);
-
-            // Execute the query
             ResultSet rs = ps.executeQuery();
-
-            // Retrieve Aadhar number from the result set
             if (rs.next()) {
                 aadharNumber = rs.getString("aadhar_number");
             }
-
-            // Close the result set, prepared statement, and connection
             rs.close();
             ps.close();
             con.close();
-
         } catch (SQLException e) {
             System.out.println("Error retrieving Aadhar number with null OTP: " + e.getMessage());
         }
@@ -146,24 +201,17 @@ public class OTPInputServlet extends HttpServlet {
         try {
             // Establish a connection to the database
             con = DBConnectionManager.getConnection();
-            
-            // Prepare SQL statement to select the OTP for the given Aadhar number
             String sql = "SELECT otp FROM aadhar_data WHERE aadhar_number = ? ORDER BY timestamp_column DESC LIMIT 1";
             ps = con.prepareStatement(sql);
-            
-            // Set the Aadhar number as a parameter in the prepared statement
             ps.setString(1, aadharNumber);
             
             // Continuously check if the OTP is not null
             while (retrievedOTP == null) {
                 // Execute the query
                 rs = ps.executeQuery();
-
-                // Retrieve the OTP from the result set
                 if (rs.next()) {
                     retrievedOTP = rs.getString("otp");
                 } else {
-                    // Sleep for a short duration before checking again
                     Thread.sleep(1000); // Sleep for 1 second
                 }
 

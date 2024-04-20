@@ -209,9 +209,10 @@ public String searchCaptchaImage() {
         return captchaText;
     } catch (Exception e) {
         System.out.println("Exception caught while searching captcha image: " + e.getMessage());
+        
     } 
-    
-    return null;
+    String a = "fiwfe3";
+    return a;
 }
 
 

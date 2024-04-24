@@ -44,5 +44,14 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="C:/Users/H3RI3R/Downloads/jar_files(2)/mysql-connector-java-8.0.28.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/commons-codec-1.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/fluent-hc-4.5.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/httpclient-4.5.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/httpclient-cache-4.5.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/httpclient-osgi-4.5.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/httpcore-4.4.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/httpmime-4.5.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/H3RI3R/anticaptcha-java/libs/java-json.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

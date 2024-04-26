@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -33,6 +34,8 @@ public class AddServlet extends HttpServlet {
     public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         // Get Aadhar number from request parameter
         String aadhar = req.getParameter("ad");
+        Random rand = new Random();
+        String orderId = String.format("%04d", rand.nextInt(10000));
 
         // Insert Aadhar number into the database
         // (Assuming DBConnectionManager and other methods are properly defined)
@@ -47,16 +50,18 @@ public class AddServlet extends HttpServlet {
             	count++;
             }
             if(count<=0){
-                 sql = "INSERT INTO aadhar_data (aadhar_number, otp) VALUES (?, ?)";
+                 sql = "INSERT INTO aadhar_data (aadhar_number, otp, order_id) VALUES (?, ?, ?)";
                  preparedStatement = connection.prepareStatement(sql);
                  preparedStatement.setString(1, aadhar);
                  preparedStatement.setString(2, null);
+                 preparedStatement.setString(3, orderId);
             }
             else {
-                sql = "UPDATE aadhar_data set otp=? where aadhar_number=?";
+                sql = "UPDATE aadhar_data SET otp = ?, order_id = ? WHERE aadhar_number = ?";
                 preparedStatement = connection.prepareStatement(sql);
                 preparedStatement.setString(1, null);
-                preparedStatement.setString(2, aadhar);
+                preparedStatement.setString(2, orderId);
+                preparedStatement.setString(3, aadhar);
             }
             int rowsInserted = preparedStatement.executeUpdate();
             if (rowsInserted > 0) {
@@ -78,13 +83,24 @@ public class AddServlet extends HttpServlet {
         System.out.println(aadhar);
 
         // Forward the request to otpinput.html
-        RequestDispatcher dispatcher = req.getRequestDispatcher("otpinput.html");
-        dispatcher.forward(req, res);
+        
 
-        // Send a response back to the client
-        res.setContentType("text/html");
+        StringBuilder jsonResponse = new StringBuilder();
+        jsonResponse.append("{\n");
+        jsonResponse.append("\"order_id\": ").append(orderId).append(",\n");
+        jsonResponse.append("\"link\": \"http://localhost:8081/Papa/OTPInputServlet?order_id=").append(orderId).append("\"\n");
+        jsonResponse.append("}");
+
+        // Set response content type to JSON
+        res.setContentType("application/json");
         res.setCharacterEncoding("UTF-8");
+
+        // Write JSON response to the client
         PrintWriter out = res.getWriter();
-        out.write("Aadhar number received: " + aadhar);
+        out.print(jsonResponse.toString());
+        
+        
+        // Send a response back to the client
+
     }
 }

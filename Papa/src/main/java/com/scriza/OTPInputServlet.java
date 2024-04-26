@@ -1,6 +1,7 @@
 package com.scriza;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 //import org.jsoup:jsoup:1.17.2;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,13 +29,38 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.http.Part;
+import jakarta.servlet.annotation.MultipartConfig;
+@MultipartConfig
 public class OTPInputServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Get the OTP from the request parameter
-        String otp = request.getParameter("otp");
- 
-        
+//    	 String otp = request.getParameter("otp");
+    	 Part otpPart = request.getPart("otp");
+ 	    String orderId = request.getParameter("order_id");
+ 	   String otp = otpPart != null ? new String(otpPart.getInputStream().readAllBytes()) : null;
+    	try {
+    	    Connection connection = DBConnectionManager.getConnection();
+
+    	        
+    	        // Now update the `otp` field for the retrieved `aadhar_number`
+    	        String updateOtpSql = "UPDATE aadhar_data SET otp = ? WHERE order_id = ?";
+    	        PreparedStatement updatePreparedStatement = connection.prepareStatement(updateOtpSql);
+    	        
+    	        updatePreparedStatement.setString(1, otp);
+    	        updatePreparedStatement.setString(2, orderId);
+    	        
+    	        // Execute the update
+    	        updatePreparedStatement.executeUpdate();
+    	        
+    	        // Close resources
+    	        updatePreparedStatement.close();
+   
+    	    connection.close();
+    	    System.out.println("Aadhar_data has been updated and otp is stored");
+    	} catch (Exception e) {
+    	    e.printStackTrace();
+    	    System.out.println("Aadhar_data hasnot been updated and otp is not been stored");// Handle the exception
+    	}
         WebDriver driver = CustomDriver.webDriver;
 //        Set<String> windowsOpened = driver.getWindowHandles();
         driver.findElement(By.name("otp")).sendKeys(otp);
@@ -58,7 +84,7 @@ public class OTPInputServlet extends HttpServlet {
         	 profileElement.click();
         	 WebElement nameElement =  wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='name-local']")));
         	 JSONObject jsonData = scrapeDataFromWebsite(driver);
-
+        	 
              // Further processing of the scraped data (if needed)
         	 if (jsonData != null) {
                  try {
@@ -67,23 +93,52 @@ public class OTPInputServlet extends HttpServlet {
                      response.setCharacterEncoding("UTF-8");
 
                      // Send JSON response
-                     response.getWriter().write(jsonData.toString());
+//                     response.getWriter().write(jsonData.toString());
+                     try {
+                         Connection connection = DBConnectionManager.getConnection();
+                         
+                         // Prepare SQL insert statement
+                         String sql = "INSERT INTO user_json_data (order_id, user_data_in_json) VALUES (?, ?)";
+                         PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                         
+                         preparedStatement.setString(1, orderId);
+                         preparedStatement.setString(2, jsonData.toString()); // Convert JSONObject to string
+                         
+                         // Execute the insert statement
+                         preparedStatement.executeUpdate();
+                         
+                         // Close the statement and connection
+                         preparedStatement.close();
+                         connection.close();
+                         System.out.println("The database has been updated and stored all the data inside the database");
+                         StringBuilder jsonResponse = new StringBuilder();
+//                         JsonResponse.put("data", "successful");
+                         jsonResponse.append("{\n");
+                         jsonResponse.append("\"data\": Successful").append(",\n");
+                         jsonResponse.append("\"link\": \"http://localhost:8081/Papa/checkStatus?order_id=").append(orderId).append("\"\n");
+                         jsonResponse.append("}");
+                         PrintWriter out = response.getWriter();
+                         out.print(jsonResponse.toString());
+                         
+                     } catch (Exception e) {
+                         e.printStackTrace(); // Handle exceptions appropriately
+                     }
                  } catch (JSONException e) {
                      // Handle JSONException
                      e.printStackTrace();
                  }
              } else {
+            	 JSONObject jsonResponse = new JSONObject();
+            	 jsonResponse.put("data", "access denied (wrong otp)");
+            	 response.getWriter().write(jsonResponse.toString());
                  // Handle case where scraping failed
                  response.sendRedirect("index.html");
              }
 
-            // Set response type to JSON
-//            response.setContentType("application/json");
-//            response.setCharacterEncoding("UTF-8");
-
-            // Send JSON response
-//            response.getWriter().write(jsonData.toString());
-        } else {
+        } else { 
+        	JSONObject jsonResponse = new JSONObject();
+   	 jsonResponse.put("data", "access denied (wrong otp)");
+   	 response.getWriter().write(jsonResponse.toString());
             // Redirect to index.html if login fails
             response.sendRedirect("index.html");
         }

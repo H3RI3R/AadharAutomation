@@ -19,4 +19,15 @@
         <url-pattern>/OTPInputServlet</url-pattern>
     </servlet-mapping>
     
+   <servlet>
+        <servlet-name>check_status_servlet</servlet-name>  <!-- You can choose any name for the servlet -->
+        <servlet-class>com.scriza.checkStatus</servlet-class> <!-- Fully qualified class name -->
+    </servlet>
+
+    <!-- Servlet Mapping -->
+    <servlet-mapping>
+        <servlet-name>check_status_servlet</servlet-name>  <!-- Must match the servlet name defined above -->
+        <url-pattern>/checkStatus</url-pattern>  <!-- Define the URL pattern to access this servlet -->
+    </servlet-mapping>
+    
 </web-app>

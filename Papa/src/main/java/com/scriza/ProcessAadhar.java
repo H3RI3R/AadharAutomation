@@ -2,6 +2,7 @@ package com.scriza;
 
 
 
+import org.openqa.selenium.NoSuchElementException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -10,11 +11,13 @@ import org.json.JSONObject;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
+//import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -50,7 +53,7 @@ import java.time.Duration;
 
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
-
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 //import net.sourceforge.tess4j.ITesseract;
 //import net.sourceforge.tess4j.Tesseract;
@@ -58,59 +61,107 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class ProcessAadhar {
 //    private WebDriver driver;
-	   private WebDriver driver;
-
+//	   private WebDriver driver;
+//
 	    private Connection con;
-    public ProcessAadhar(WebDriver driver) {
-    	this.driver = driver;
+    public ProcessAadhar() {
+//    	this.driver = driver;
         try {
             con = DBConnectionManager.getConnection();
         } catch (SQLException e) {
             System.out.println("Failed to establish database connection: " + e.getMessage());
         }
     }
-//    public ProcessAadhar(WebDriver driver2) {
-//		// TODO Auto-generated constructor stub
-//	}
-	public void processOTP(String aadharNumber) {
-        try {
-            // Retrieve OTP from the database
-            String otp = retrieveOTPFromDatabase(aadharNumber);
+   
+//	public void processOTP(String aadharNumber) {
+//        try {
+//            // Retrieve OTP from the database
+//            String otp = retrieveOTPFromDatabase(aadharNumber);
+//
+//            // Enter OTP and verify
+//            enterOTPAndVerify(otp);
+//        } catch (SQLException | InterruptedException e) {
+//            // Handle exceptions
+//            e.printStackTrace();
+//        }
+//    }
 
-            // Enter OTP and verify
-            enterOTPAndVerify(otp);
-        } catch (SQLException | InterruptedException e) {
-            // Handle exceptions
-            e.printStackTrace();
-        }
-    }
-
-    public void getCaptcha(String aadhar, HttpServletResponse response) {
+    public void getCaptcha(String aadhar, HttpServletRequest req) {
         // Assign the local driver to the class-level driver
-        driver.manage().window().maximize();
+    	WebDriver driver = (WebDriver) req.getAttribute("webdriver"+aadhar);
+       
         try {
-            driver.manage().window().maximize();
+           
             driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
             driver.get("https://myaadhaar.uidai.gov.in/");
             WebElement login = driver.findElement(By.xpath("//button[@class='button_btn__HeAxz']"));
             login.click();
             Thread.sleep(3000);
+            driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+         
+            
             WebElement aadhaarInput = driver.findElement(By.name("uid"));
             aadhaarInput.sendKeys(aadhar);
-            saveCaptchaImage();
+            saveCaptchaImage(driver);
           
-            try {
-                String result = solveCaptcha();
-                System.out.println("Captcha solved: " + result);
-                enterCaptcha(driver, result, response);
+            try { String result = solveCaptcha(driver);
+        	System.out.println("Captcha Found: " + result);
+        	
+            enterCaptcha(driver, result);
+            	if (isSvgIconVisible(driver)) { // If true, CAPTCHA was incorrect
+                    System.out.println("Captcha was incorrect. Retrying...");
+
+                    // Refresh the CAPTCHA and re-solve
+                    refreshCaptcha(driver);
+                    saveCaptchaImage(driver); // Save the refreshed CAPTCHA image
+                    result = solveCaptcha(driver); // Re-solve CAPTCHA
+                    enterCaptcha(driver, result); // Re-enter CAPTCHA
+                } else {
+                    System.out.println("Captcha entered successfully.");
+                }
+
+               
+                    
             } catch (Exception e) {
                 System.err.println("Error while solving captcha: " + e.getMessage());
             } 
         } catch (Exception e) {
            e.printStackTrace();
         }
+        
+        CustomDriver.setWebDriverMap(aadhar, driver);
     }
-    public static String solveCaptcha() throws InterruptedException, MalformedURLException, JSONException {
+    private boolean isAadhaarNumberInvalid(WebDriver driver) {
+        try {
+            WebElement errorElement = driver.findElement(By.className("sc-cBNfnY")); // Class indicating error
+            return errorElement.isDisplayed(); // If visible, Aadhaar is invalid
+        } catch (NoSuchElementException e) {
+            return false; // No error element found, Aadhaar seems valid
+        }
+    }
+    private void refreshCaptcha(WebDriver driver) {
+	 WebElement refreshButton = driver.findElement(By.xpath("//img[@src='./static/media/RefreshIcon.874efff6da316d5687c409d5d2763bbe.svg']"));
+        refreshButton.click();
+		
+	}
+    private void sendErrorResponse(HttpServletResponse res, String errorMessage) throws IOException {
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+        PrintWriter out = res.getWriter();
+        out.print("{\n  \"error\": \"" + errorMessage + "\"\n}");
+        out.flush();
+    }
+	private boolean isSvgIconVisible(WebDriver driver) {
+		// TODO Auto-generated method stub
+    	try {
+            driver.findElement(By.className("MuiSvgIcon-root")); // Attempt to find the element
+            return true; // If found, return true
+        } catch (NoSuchElementException e) {
+            return false; // If not found, return false
+        }
+	}
+
+	public static String solveCaptcha(WebDriver driver) throws InterruptedException, MalformedURLException, JSONException {
         DebugHelper.setVerboseMode(true);
 
         ImageToText api = new ImageToText();
@@ -130,12 +181,19 @@ public class ProcessAadhar {
             DebugHelper.out("Could not solve the captcha.", DebugHelper.Type.ERROR);
         } else {
         	String result = api.getTaskSolution().getText();
+        	if (result.length() == 5) {
+                System.out.println("Captcha Found: " + result);
             DebugHelper.out("Result: " + api.getTaskSolution().getText(), DebugHelper.Type.SUCCESS);
-            return result;
+            return result;}
+            else{
+            	WebElement refreshButton = driver.findElement(By.xpath("//img[@src='./static/media/RefreshIcon.874efff6da316d5687c409d5d2763bbe.svg']"));
+                refreshButton.click(); 
+                
+            }
         }
 		return null;
     }
-    public void saveCaptchaImage() {
+    public void saveCaptchaImage(WebDriver driver) {
     	  try {
               // Get the CAPTCHA image source
               WebElement imageElement = driver.findElement(By.xpath("//img[@alt='captcha']"));
@@ -187,7 +245,7 @@ public class ProcessAadhar {
               System.err.println("Error during image download or save: " + e.getMessage());
           }
     }
-    private void enterCaptcha(WebDriver driver, String captchaText, HttpServletResponse response) {
+    private void enterCaptcha(WebDriver driver, String captchaText) {
         int maxAttempts = 6; // Maximum number of attempts to enter captcha
         int attempts = 0; // Initialize attempts counter
         while (attempts < maxAttempts) {
@@ -208,9 +266,9 @@ public class ProcessAadhar {
                         WebElement refreshIcon = driver.findElement(By.xpath("//img[@src='./static/media/RefreshIcon.874efff6da316d5687c409d5d2763bbe.svg']"));
                         refreshIcon.click();
                         Thread.sleep(2000);
-                        saveCaptchaImage();
-                        captchaText =solveCaptcha();
-                        enterCaptcha(driver, captchaText, response);
+                        saveCaptchaImage(driver);
+                        captchaText =solveCaptcha(driver);
+                        enterCaptcha(driver, captchaText);
                          // Retrieve new captcha text
                         attempts++; // Increment attempts counter
                         continue; // Retry entering captcha with new text
@@ -276,27 +334,32 @@ public class ProcessAadhar {
         return retrievedOTP;
     }
 
+	
 
-    public void enterOTPAndVerify(String otp) throws InterruptedException {
-    	 if (otp != null && !otp.isEmpty()) {
-    	        // Find the OTP input field
-    		 WebElement otpInput = driver.findElement(By.xpath("//input[@name='otp']"));
-    	        
-    	        // Loop until the OTP field is filled
-    	        while (otpInput.getAttribute("value") == null || otpInput.getAttribute("value").isEmpty()) {
-    	            try {
-    	                Thread.sleep(1000); // Wait for 1 second before checking again
-    	            } catch (InterruptedException e) {
-    	                e.printStackTrace();
-    	            }
-    	        }
-    	        
-    	        // Once the OTP field is filled, enter the OTP
-    	        otpInput.sendKeys(otp);
-    	    } else {
-    	        System.out.println("OTP is null or empty.");
-    	    }
-    }
+		
+	
+
+
+//    public void enterOTPAndVerify(String otp) throws InterruptedException {
+//    	 if (otp != null && !otp.isEmpty()) {
+//    	        // Find the OTP input field
+//    		 WebElement otpInput = driver.findElement(By.xpath("//input[@name='otp']"));
+//    	        
+//    	        // Loop until the OTP field is filled
+//    	        while (otpInput.getAttribute("value") == null || otpInput.getAttribute("value").isEmpty()) {
+//    	            try {
+//    	                Thread.sleep(1000); // Wait for 1 second before checking again
+//    	            } catch (InterruptedException e) {
+//    	                e.printStackTrace();
+//    	            }
+//    	        }
+//    	        
+//    	        // Once the OTP field is filled, enter the OTP
+//    	        otpInput.sendKeys(otp);
+//    	    } else {
+//    	        System.out.println("OTP is null or empty.");
+//    	    }
+//    }
     }
 
 //	private void insertCaptchaUrlToDatabase(String captchaImageUrl) throws SQLException {

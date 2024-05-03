@@ -21,6 +21,8 @@ import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.By.ById;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -36,6 +38,7 @@ public class OTPInputServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 //    	 String otp = request.getParameter("otp");
     	 Part otpPart = request.getPart("otp");
+    	 String aadhar =null;
  	    String orderId = request.getParameter("order_id");
  	   String otp = otpPart != null ? new String(otpPart.getInputStream().readAllBytes()) : null;
     	try {
@@ -48,7 +51,15 @@ public class OTPInputServlet extends HttpServlet {
     	        
     	        updatePreparedStatement.setString(1, otp);
     	        updatePreparedStatement.setString(2, orderId);
-    	        
+    	        String sql = "select * from aadhar_data where order_id=?";
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                preparedStatement.setString(1, orderId);
+                ResultSet rs = preparedStatement.executeQuery();
+                
+                if(rs.absolute(1)) {
+                	aadhar=rs.getString(1);
+//                	System.out.printf("Aadhar has been captctured and now we will get the WebDriver using this Aadhar",aadhar );
+                }
     	        // Execute the update
     	        updatePreparedStatement.executeUpdate();
     	        
@@ -56,12 +67,12 @@ public class OTPInputServlet extends HttpServlet {
     	        updatePreparedStatement.close();
    
     	    connection.close();
-    	    System.out.println("Aadhar_data has been updated and otp is stored");
+    	    System.out.println("Aadhar has been captctured and now we will get the WebDriver using this Aadhar"+aadhar );
     	} catch (Exception e) {
     	    e.printStackTrace();
     	    System.out.println("Aadhar_data hasnot been updated and otp is not been stored");// Handle the exception
     	}
-        WebDriver driver = CustomDriver.webDriver;
+        WebDriver driver = CustomDriver.getWebDriver(aadhar);
 //        Set<String> windowsOpened = driver.getWindowHandles();
         driver.findElement(By.name("otp")).sendKeys(otp);
         try {
@@ -72,9 +83,17 @@ public class OTPInputServlet extends HttpServlet {
 		}
         
         driver.findElement(By.className("button_btn__A84dV")).click();
-//        Alert alert = driver.switchTo().alert();	
-//        String alert = driver.switchTo().alert().getText();
-//        if(alert.contains("Do you want to clear the session and proceed? "))
+        try {
+            WebElement errorElement = driver.findElement(By.className("login-section__error"));
+            if (errorElement.isDisplayed() && errorElement.getText().contains("Invalid OTP")) {
+                // If an error message is displayed indicating invalid OTP, return a custom response
+                sendErrorResponse(response, "Invalid OTP. Please enter again.");
+                return; // Stop further processing
+            }
+        } catch (NoSuchElementException e) {
+            // If no error message is found, the OTP is valid
+        }
+
         if(!driver.findElements(By.className("aadhaar-front")).isEmpty()) {
             // If Aadhaar front element is present, indicating successful login
 
@@ -115,10 +134,12 @@ public class OTPInputServlet extends HttpServlet {
 //                         JsonResponse.put("data", "successful");
                          jsonResponse.append("{\n");
                          jsonResponse.append("\"data\": Successful").append(",\n");
-                         jsonResponse.append("\"link\": \"http://localhost:8081/Papa/checkStatus?order_id=").append(orderId).append("\"\n");
+                         jsonResponse.append("\"link\": \"http://103.101.59.60/API/checkStatus?order_id=").append(orderId).append("\"\n");
                          jsonResponse.append("}");
                          PrintWriter out = response.getWriter();
                          out.print(jsonResponse.toString());
+                         driver.findElement(By.className("header__log-out-button")).click();
+                         
                          
                      } catch (Exception e) {
                          e.printStackTrace(); // Handle exceptions appropriately
@@ -128,22 +149,21 @@ public class OTPInputServlet extends HttpServlet {
                      e.printStackTrace();
                  }
              } else {
-            	 JSONObject jsonResponse = new JSONObject();
-            	 jsonResponse.put("data", "access denied (wrong otp)");
-            	 response.getWriter().write(jsonResponse.toString());
-                 // Handle case where scraping failed
-                 response.sendRedirect("index.html");
+            	 sendErrorResponse(response, "Invalid OTP. Please enter again.");
              }
 
         } else { 
-        	JSONObject jsonResponse = new JSONObject();
-   	 jsonResponse.put("data", "access denied (wrong otp)");
-   	 response.getWriter().write(jsonResponse.toString());
-            // Redirect to index.html if login fails
-            response.sendRedirect("index.html");
+        	sendErrorResponse(response, "Invalid OTP. Please enter again.");
         }
+   
     }
-
+    private void sendErrorResponse(HttpServletResponse res, String errorMessage) throws IOException {
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+        PrintWriter out = res.getWriter();
+        out.print("{\n  \"error\": \"" + errorMessage + "\"\n}");
+        out.flush(); // Ensure the error response is sent
+    }
     private JSONObject scrapeDataFromWebsite(WebDriver driver) {
     	 JSONObject jsonData = new JSONObject();
 
@@ -181,72 +201,17 @@ public class OTPInputServlet extends HttpServlet {
     	        String aadharAddress = aadharAddressElement.text();
     	        jsonData.put("AadharAddress", aadharAddress);
 
-    	        // Convert JSONObject to string
-//    	        String jsonResult = jsonData.toString();
-
-    	        // Print JSON data
-//    	        System.out.println(jsonResult);
 
     	        return jsonData;
     	    } catch (Exception e) {
     	        System.out.println("Error scraping data from website: " + e.getMessage());
     	        return null;
     	    }
-//    	WebElement nameElement = driver.findElement(By.xpath("//div[@class='name-local']"));
-//        String name = nameElement.getText();
-//        WebElement aadharContentElement= driver.findElement(By.xpath("//div[@class='aadhaar-front__aadhaar-content']"));
-//        String AddharContent = aadharContentElement.getText();
-//        WebElement ageElement = driver.findElement(By.xpath("//div[@class= 'name-english']"));
-//        String age = ageElement.getText();
-//
-//        WebElement dobElement = driver.findElement(By.className("dob"));
-//        String dob = dobElement.getText();
-//
-//        WebElement genderElement = driver.findElement(By.className("gender"));
-//        String gender = genderElement.getText();
-//
-//        WebElement aadharNumElement = driver.findElement(By.className("aadhaar-front__aadhaar-number"));
-//        String aadharNum = aadharNumElement.getText();
-//
-//        WebElement aadharAddressElement = driver.findElement(By.className("aadhaar-back__address-english"));
-//        String aadharAddress = aadharAddressElement.getText();
-//
-//        // Print scraped data to console
-//        System.out.println("Name: " + name);
-//        System.out.println("Age: " + age);
-//        System.out.println("Date of Birth: " + dob);
-//        System.out.println("Gender: " + gender);
-//        System.out.println("Aadhar Number: " + aadharNum);
-//        System.out.println("Aadhar Address: " + aadharAddress);
-//        System.out.println("ALl contents in aadhar  "+ AddharContent);
+
     }
 
-    private String convertToJson(List<String> data) {
-        JSONObject jsonObject = new JSONObject();
-        for (int i = 0; i < data.size(); i++) {
-            jsonObject.put("data" + i, data.get(i));
-        }
-        return jsonObject.toString();
-    }
 
-    private String getAadharWithNullOTP() {
-        String aadharNumber = null;
-        try {
-            Connection con = DBConnectionManager.getConnection();
-            String sql = "SELECT aadhar_number FROM aadhar_data WHERE otp IS NULL";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                aadharNumber = rs.getString("aadhar_number");
-            }
-            rs.close();
-            ps.close();
-            con.close();
-        } catch (SQLException e) {
-            System.out.println("Error retrieving Aadhar number with null OTP: " + e.getMessage());
-        }
-        return aadharNumber;
-    }
+
     public String retrieveOTPFromDatabase(String aadharNumber) throws SQLException, InterruptedException {
         Connection con = null;
         PreparedStatement ps = null;
@@ -317,30 +282,3 @@ public class OTPInputServlet extends HttpServlet {
 
 }
 
-	/*
-	 * // Get Aadhar number where OTP is null String aadharNumber =
-	 * getAadharWithNullOTP();
-	 * 
-	 * // Store Aadhar number and OTP in the database
-	 * storeAadharAndOTPInDatabase(aadharNumber, otp);
-	 */
- 
-	/*
-	 * try { String otps = retrieveOTPFromDatabase(aadharNumber);
-	 * System.out.println("OTP retrived from Databse "+otps); } catch (SQLException
-	 * | InterruptedException e) { // TODO Auto-generated catch block
-	 * e.printStackTrace(); }
-	 */
-
-/*
- * String actualInvalidOTPError =
- * driver.findElement(By.className("login-section__error")).getText(); String
- * expectedInvalidOTPErrror = "Unable to Validate OTP! Please try again later";
- */
-/*
-* ProcessAadhar processAadhar = new ProcessAadhar(driver,aadharNumber,otp);
-* processAadhar.processOTP(aadharNumber);
-*/
-//enterOTPAndVerify(otp);
-// Redirect the user to another page or send a response
-//if(expectedInvalidOTPErrror.equalsIgnoreCase(actualInvalidOTPError))

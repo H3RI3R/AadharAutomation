@@ -1,6 +1,7 @@
 package com.scriza;
 
 import java.io.IOException;
+
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -104,34 +105,35 @@ public class AddServlet extends HttpServlet {
             }
 
             ChromeOptions options = new ChromeOptions();
-            options.addArguments( "--disable-gpu"); 
-            options.setAcceptInsecureCerts(true);
-            options.addArguments(
-                    "--blink-settings=imagesEnabled=false",
-                    "--renderer",
-                    "--no-sandbox",
-                    "--no-service-autorun",
-                    "--no-experiments",
-                    "--no-default-browser-check",
-                    "--disable-webgl",
-                    "--disable-threaded-animation",
-                    "--disable-threaded-scrolling",
-                    "--disable-in-process-stack-traces",
-                    "--disable-histogram-customizer",
-                    "--disable-gl-extensions",
-                    "--disable-extensions",
-                    "--disable-composited-antialiasing",
-                    "--disable-canvas-aa",
-                    "--disable-3d-apis",
-                    "--disable-accelerated-2d-canvas",
-                    "--disable-accelerated-jpeg-decoding",
-                    "--disable-accelerated-mjpeg-decode",
-                    "--disable-app-list-dismiss-on-blur",
-                    "--disable-accelerated-video-decode",
-                    "--num-raster-threads=1",
-                    "--window-size=375,812",
-                    "--headless=new"// Set window size
-                );
+            options.setBinary("C:/Users/H3RI3R/Downloads/chrome-win/chrome-win/chrome.exe");
+//            options.addArguments( "--disable-gpu"); 
+//            options.setAcceptInsecureCerts(true);
+//            options.addArguments(
+//                    "--blink-settings=imagesEnabled=false",
+//                    "--renderer",
+//                    "--no-sandbox",
+//                    "--no-service-autorun",
+//                    "--no-experiments",
+//                    "--no-default-browser-check",
+//                    "--disable-webgl",
+//                    "--disable-threaded-animation",
+//                    "--disable-threaded-scrolling",
+//                    "--disable-in-process-stack-traces",
+//                    "--disable-histogram-customizer",
+//                    "--disable-gl-extensions",
+//                    "--disable-extensions",
+//                    "--disable-composited-antialiasing",
+//                    "--disable-canvas-aa",
+//                    "--disable-3d-apis",
+//                    "--disable-accelerated-2d-canvas",
+//                    "--disable-accelerated-jpeg-decoding",
+//                    "--disable-accelerated-mjpeg-decode",
+//                    "--disable-app-list-dismiss-on-blur",
+//                    "--disable-accelerated-video-decode",
+//                    "--num-raster-threads=1",
+//                    "--window-size=375,812",
+//                    "--headless=new"// Set window size
+//                );
             		// Necessary configurations
             WebDriver webDriver = new ChromeDriver(options);
 

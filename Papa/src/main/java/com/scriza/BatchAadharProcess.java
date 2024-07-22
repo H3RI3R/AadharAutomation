@@ -1,6 +1,7 @@
 package com.scriza;
 
 import jakarta.servlet.ServletException;
+
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,13 +40,11 @@ public class BatchAadharProcess extends HttpServlet {
 		for(String str:request.getParameterValues("multiInput")) {
 			aadhaarNumbers.add(str);
 		}
-//		 aadhaarNumbers = Arrays.asList(request.getParameterValues("multiInput[]"));
-//		(aadhaarNumbers).stream().forEach(s->System.out.print(s));
 
 	     ExecutorService executorService = Executors.newFixedThreadPool(aadhaarNumbers.size()); // Adjust the pool size based on your needs
 
 
-		// TODO Auto-generated method stub
+
 		System.setProperty("webdriver.chrome.driver", "C:\\selenium WebDriver\\chromedriver-win64\\chromedriver.exe");
 //        CustomDriver.webDriver = new ChromeDriver();
 		for(String aadhar : aadhaarNumbers) {
@@ -70,8 +69,7 @@ public class BatchAadharProcess extends HttpServlet {
 			}
 		}
 
-     // List of Aadhaar numbers to process concurrently
-//		response.getWriter().append("Served at: ").append(request.getContextPath());
+
 	}
 
 	/**

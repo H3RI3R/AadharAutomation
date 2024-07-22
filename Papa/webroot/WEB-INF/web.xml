@@ -2,89 +2,61 @@
 
 <web-app version="6.0" id="WebApp_ID" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
+    <servlet>
+        <servlet-name>abc</servlet-name>
+        <servlet-class>com.scriza.AddServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
 
-<servlet>
+    <servlet-mapping>
+        <servlet-name>abc</servlet-name>
+        <url-pattern>/add</url-pattern>
+    </servlet-mapping>
 
-<servlet-name>abc</servlet-name>
+    <servlet>
+        <servlet-name>abe</servlet-name>
+        <servlet-class>com.scriza.OTPInputServlet</servlet-class>
+    </servlet>
 
-<servlet-class>com.scriza.AddServlet</servlet-class>
+    <servlet-mapping>
+        <servlet-name>abe</servlet-name>
+        <url-pattern>/OTPInputServlet</url-pattern>
+    </servlet-mapping>
 
-<async-supported>true</async-supported>
+    <servlet>
+        <servlet-name>check_status_servlet</servlet-name>
+        <servlet-class>com.scriza.checkStatus</servlet-class>
+    </servlet>
 
-</servlet>
+    <servlet-mapping>
+        <servlet-name>check_status_servlet</servlet-name>
+        <url-pattern>/checkStatus</url-pattern>
+    </servlet-mapping>
 
+    <servlet>
+        <description/>
+        <display-name>BatchAadharProcess</display-name>
+        <servlet-name>BatchAadharProcess</servlet-name>
+        <servlet-class>com.scriza.BatchAadharProcess</servlet-class>
+    </servlet>
 
-<servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>BatchAadharProcess</servlet-name>
+        <url-pattern>/BatchAadharProcess</url-pattern>
+    </servlet-mapping>
 
-<servlet-name>abc</servlet-name>
+    <servlet>
+        <servlet-name>start_workers</servlet-name>
+        <servlet-class>com.scriza.StartWorkersServlet</servlet-class>
+    </servlet>
 
-<url-pattern>/add</url-pattern>
+    <servlet-mapping>
+        <servlet-name>start_workers</servlet-name>
+        <url-pattern>/start-workers</url-pattern>
+    </servlet-mapping>
 
-</servlet-mapping>
-
-
-<servlet>
-
-<servlet-name>abe</servlet-name>
-
-<servlet-class>com.scriza.OTPInputServlet</servlet-class>
-
-</servlet>
-
-
-<servlet-mapping>
-
-<servlet-name>abe</servlet-name>
-
-<url-pattern>/OTPInputServlet</url-pattern>
-
-</servlet-mapping>
-
-
-<servlet>
-
-<servlet-name>check_status_servlet</servlet-name>
-
-<servlet-class>com.scriza.checkStatus</servlet-class>
-
-</servlet>
-
-
-<servlet-mapping>
-
-<servlet-name>check_status_servlet</servlet-name>
-
-<url-pattern>/checkStatus</url-pattern>
-
-</servlet-mapping>
-
-
-<servlet>
-
-<description/>
-
-<display-name>BatchAadharProcess</display-name>
-
-<servlet-name>BatchAadharProcess</servlet-name>
-
-<servlet-class>com.scriza.BatchAadharProcess</servlet-class>
-
-</servlet>
-
-
-<servlet-mapping>
-
-<servlet-name>BatchAadharProcess</servlet-name>
-
-<url-pattern>/BatchAadharProcess</url-pattern>
-
-</servlet-mapping>
-
-
-<welcome-file-list>
-
-<welcome-file>ProcessAadhar.html</welcome-file>
-
-</welcome-file-list>
+    <welcome-file-list>
+        <welcome-file>ProcessAadhar.html</welcome-file>
+    </welcome-file-list>
 
 </web-app>
